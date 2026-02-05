@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ironvault/core/autolock/auto_lock_provider.dart';
 import 'package:ironvault/core/theme/theme_provider.dart';
 import 'package:ironvault/features/settings/about_screen.dart';
 import 'package:ironvault/features/settings/security_tips_screen.dart';
@@ -10,7 +11,12 @@ import 'package:ironvault/features/vault/screens/password_health_screen.dart';
 import 'change_pin_screen.dart';
 import 'package:ironvault/features/auth/screens/login_screen.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:ironvault/core/theme/app_tokens.dart';
+import 'package:ironvault/core/update/app_update_service.dart';
+import 'package:ironvault/core/update/update_prompt.dart';
+import 'package:ironvault/core/utils/recovery_key.dart';
+import 'package:ironvault/features/auth/screens/recovery_key_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   final bool showAppBar;
@@ -23,10 +29,25 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _biometricEnabled = false;
+  bool _lockOnSwitch = true;
+  bool _autofillEnabled = true;
+  bool _hasRecoveryKey = true;
+  late final String _securityTip;
+
+  static const List<String> _securityTips = [
+    'Use a unique master PIN and avoid easy patterns.',
+    'Save your recovery key somewhere secure and offline.',
+    'Enable biometrics for faster and safer unlocks.',
+    'Review Password Health regularly to spot weak entries.',
+    'Turn on autofill to avoid copying passwords manually.',
+  ];
 
   @override
   void initState() {
     super.initState();
+    _securityTip =
+        _securityTips[DateTime.now().microsecondsSinceEpoch %
+            _securityTips.length];
     _loadSettings();
   }
 
@@ -35,6 +56,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     _biometricEnabled =
         (await storage.readValue("biometrics_enabled") ?? "false") == "true";
+    _lockOnSwitch =
+        (await storage.readValue("auto_lock_on_switch") ?? "true") == "true";
+    _autofillEnabled =
+        (await storage.readValue("autofill_enabled") ?? "true") == "true";
+    _hasRecoveryKey = (await storage.readRecoveryKeyHash()) != null;
 
     if (mounted) setState(() {});
   }
@@ -63,6 +89,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         .setTheme(value ? ThemeMode.dark : ThemeMode.light);
   }
 
+  Future<void> _toggleLockOnSwitch(bool value) async {
+    await ref.read(autoLockProvider.notifier).setLockOnSwitch(value);
+    if (mounted) setState(() => _lockOnSwitch = value);
+  }
+
+  Future<void> _toggleAutofill(bool value) async {
+    final storage = ref.read(secureStorageProvider);
+    await storage.writeValue('autofill_enabled', value ? 'true' : 'false');
+    if (mounted) setState(() => _autofillEnabled = value);
+
+    try {
+      const intent = MethodChannel('ironvault/autofill');
+      await intent.invokeMethod('openAutofillSettings');
+    } catch (_) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Autofill settings'),
+            content: const Text(
+              'Please enable IronVault in Android Settings → Autofill.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _logout() async {
     Navigator.pushAndRemoveUntil(
       context,
@@ -71,74 +131,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Future<void> _setupRecoveryKey() async {
+    final storage = ref.read(secureStorageProvider);
+    final key = RecoveryKeyUtil.generate();
+    await storage.writeRecoveryKeyHash(RecoveryKeyUtil.hash(key));
+    if (!mounted) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RecoveryKeyScreen(
+          recoveryKey: key,
+          doneLabel: 'Done',
+          onDone: () => Navigator.pop(context),
+        ),
+      ),
+    );
+
+    if (mounted) setState(() => _hasRecoveryKey = true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
-    // final isDark = Theme.of(context).brightness == Brightness.dark;
     final isDarkTheme = themeMode == ThemeMode.dark;
-    final textColor = AppThemeColors.text(context);
-    final textMuted = AppThemeColors.textMuted(context);
 
     return Scaffold(
       appBar: widget.showAppBar ? AppBar(title: const Text("Settings")) : null,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Profile header
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.12),
-                  child: Icon(
-                    Icons.person,
-                    size: 28,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "IronVault User",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: textColor,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Your secure vault profile",
-                        style: TextStyle(fontSize: 12, color: textMuted),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(height: 4),
 
-          const SizedBox(height: 24),
+          _settingsHeader(context),
 
           _sectionTitle("Security"),
+
+          if (!_hasRecoveryKey)
+            _settingsTile(
+              context,
+              icon: Icons.vpn_key_outlined,
+              title: "Set up Recovery Key",
+              onTap: _setupRecoveryKey,
+              trailing: const Icon(Icons.chevron_right),
+            ),
 
           _settingsTile(
             context,
@@ -187,6 +223,103 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onChanged: _toggleTheme,
           ),
 
+          _switchTile(
+            context,
+            icon: Icons.lock_outline,
+            title: "Lock on App Switch",
+            subtitle: "Auto-lock when app goes to background",
+            value: _lockOnSwitch,
+            onChanged: _toggleLockOnSwitch,
+          ),
+
+          _switchTile(
+            context,
+            icon: Icons.autofps_select,
+            title: "Autofill Service",
+            subtitle: "Enable Android Autofill (system setting required)",
+            value: _autofillEnabled,
+            onChanged: _toggleAutofill,
+          ),
+
+          _settingsTile(
+            context,
+            icon: Icons.system_update_alt,
+            title: "Check for Updates",
+            onTap: () async {
+              if (!context.mounted) return;
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) {
+                  return const AlertDialog(
+                    title: Text('Checking for updates'),
+                    content: Row(
+                      children: [
+                        SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 12),
+                        Text('Please wait...'),
+                      ],
+                    ),
+                  );
+                },
+              );
+
+              final info = await AppUpdateService().checkForUpdate();
+              if (!context.mounted) return;
+              Navigator.pop(context);
+
+              if (info == null) {
+                showDialog(
+                  context: context,
+                  builder: (_) {
+                    return AlertDialog(
+                      title: const Text('No update found'),
+                      content: const Text(
+                        'You already have the latest version.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+                return;
+              }
+
+              showDialog(
+                context: context,
+                builder: (_) {
+                  return AlertDialog(
+                    title: const Text('Found one update'),
+                    content: Text(
+                      'Version ${info.latestVersion} is available.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Not now'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          UpdatePrompt.show(context, info);
+                        },
+                        child: const Text('Download'),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+
           const SizedBox(height: 20),
           _sectionTitle("Help & Info"),
 
@@ -214,6 +347,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             },
           ),
 
+          _settingsTile(
+            context,
+            icon: Icons.bug_report_outlined,
+            title: "Report an Issue",
+            onTap: () async {
+              const url = 'https://github.com/r6rizwan/Password-Manager/issues';
+              final uri = Uri.parse(url);
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            },
+          ),
+
           const SizedBox(height: 24),
 
           ElevatedButton(
@@ -234,14 +378,99 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  // ---------------- UI HELPERS ----------------
-
   Widget _sectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         title,
         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  Widget _settingsHeader(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.12),
+                child: Icon(
+                  Icons.shield_moon_outlined,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'IronVault',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Your vault is protected and ready.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).textTheme.bodySmall?.color,
+            ),
+          ),
+          const SizedBox(height: 12),
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SecurityTipsScreen()),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.tips_and_updates_outlined,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Security tip: $_securityTip',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, size: 18),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -342,8 +571,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 }
 
-// ---------------- AUTO LOCK SHEET ----------------
-
 class _AutoLockSheet extends ConsumerWidget {
   const _AutoLockSheet();
 
@@ -362,7 +589,7 @@ class _AutoLockSheet extends ConsumerWidget {
       builder: (context, snapshot) {
         final selected = snapshot.data ?? "immediately";
 
-        return Container(
+        return Padding(
           padding: const EdgeInsets.all(18),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -410,5 +637,3 @@ class _AutoLockSheet extends ConsumerWidget {
     );
   }
 }
-
-// ---------------- THEME SELECTOR SHEET ----------------

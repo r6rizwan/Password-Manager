@@ -252,7 +252,6 @@ class _CredentialListScreenState extends ConsumerState<CredentialListScreen> {
       floatingActionButton: null,
       body: Builder(
         builder: (context) {
-          final category = widget.categoryFilter;
           return _loading
               ? const Center(child: CircularProgressIndicator())
               : GestureDetector(
@@ -266,84 +265,9 @@ class _CredentialListScreenState extends ConsumerState<CredentialListScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(18),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.06),
-                                blurRadius: 14,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 22,
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.12),
-                                child: Icon(
-                                  Icons.lock_rounded,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      category != null && category.isNotEmpty
-                                          ? category
-                                          : "Your vault",
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      "Search, sort, and manage items",
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.swap_vert_rounded),
-                                tooltip: "Sort",
-                                onPressed: _openSortSheet,
-                              ),
-                            ],
-                          ),
-                        ),
+                        const SizedBox(height: 4),
 
-                        const SizedBox(height: 16),
-
-                        if (category != null && category.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                category,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade600,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                        /// 🔍 SEARCH BAR + SORT CHIP
+                        /// SEARCH BAR + SORT CHIP
                         Row(
                           children: [
                             Expanded(
@@ -354,8 +278,13 @@ class _CredentialListScreenState extends ConsumerState<CredentialListScreen> {
                                   ref.read(searchQueryProvider.notifier).state =
                                       value.trim().toLowerCase();
                                 },
-                                onSortPressed: _openSortSheet,
                               ),
+                            ),
+                            const SizedBox(width: 10),
+                            IconButton(
+                              icon: const Icon(Icons.swap_vert_rounded),
+                              tooltip: "Sort",
+                              onPressed: _openSortSheet,
                             ),
                           ],
                         ),

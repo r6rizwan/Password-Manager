@@ -10,11 +10,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ironvault/core/providers.dart';
 import 'package:ironvault/core/secure_storage.dart';
 import 'package:ironvault/features/navigation/app_scaffold.dart';
-
 import 'package:ironvault/core/navigation/global_nav.dart';
 import 'package:ironvault/core/autolock/auto_lock_provider.dart';
 import 'package:ironvault/core/utils/pin_kdf.dart';
-import 'package:ironvault/features/auth/screens/auth_choice_screen.dart';
+import 'package:ironvault/features/auth/screens/forgot_pin_screen.dart';
 import 'package:ironvault/core/theme/app_tokens.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -159,8 +158,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       if (!mounted) return;
 
       // Navigate away and return immediately — do not call setState after this
-      navKey.currentState?.pushReplacement(
+      navKey.currentState?.pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const AppScaffold()),
+        (_) => false,
       );
       return;
     } else {
@@ -295,8 +295,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     const SizedBox(height: 4),
                     CircleAvatar(
                       radius: 28,
-                      backgroundColor:
-                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.12),
                       child: Icon(
                         Icons.lock_outline,
                         color: Theme.of(context).colorScheme.primary,
@@ -306,18 +307,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     const SizedBox(height: 12),
                     Text(
                       "Enter your PIN",
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(color: textColor),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleMedium?.copyWith(color: textColor),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       "Unlock IronVault",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: textMuted,
-                      ),
+                      style: TextStyle(fontSize: 12, color: textMuted),
                     ),
                     const SizedBox(height: 18),
 
@@ -351,9 +348,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       children: [
                         TextButton(
                           onPressed: () {
-                            navKey.currentState?.pushReplacement(
+                            navKey.currentState?.push(
                               MaterialPageRoute(
-                                builder: (_) => const AuthChoiceScreen(),
+                                builder: (_) => const ForgotPinScreen(),
                               ),
                             );
                           },

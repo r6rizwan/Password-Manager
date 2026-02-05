@@ -70,6 +70,11 @@ const List<ItemTypeDefinition> itemTypes = [
         required: true,
       ),
       FieldDefinition(
+        key: 'ifsc_code',
+        label: 'IFSC Code',
+        required: true,
+      ),
+      FieldDefinition(
         key: 'notes',
         label: 'Notes',
         maxLines: 3,
@@ -87,7 +92,11 @@ const List<ItemTypeDefinition> itemTypes = [
         keyboardType: TextInputType.number,
         required: true,
       ),
-      FieldDefinition(key: 'expiry', label: 'Expiry (MM/YY)'),
+      FieldDefinition(
+        key: 'expiry',
+        label: 'Expiry (MM/YY)',
+        required: true,
+      ),
       FieldDefinition(
         key: 'notes',
         label: 'Notes',
@@ -104,7 +113,7 @@ const List<ItemTypeDefinition> itemTypes = [
         key: 'scans',
         label: 'Scanned Pages',
       ),
-      FieldDefinition(key: 'document_id', label: 'Document ID', required: true),
+      FieldDefinition(key: 'document_id', label: 'Document ID'),
       FieldDefinition(
         key: 'notes',
         label: 'Notes',

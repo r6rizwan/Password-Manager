@@ -1,24 +1,21 @@
-// ignore_for_file: depend_on_referenced_packages, use_build_context_synchronously, deprecated_member_use
+// ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ironvault/core/providers.dart';
 import 'package:ironvault/core/utils/pin_kdf.dart';
-import 'package:ironvault/features/vault/screens/enable_biometrics_screen.dart';
+import 'package:ironvault/features/auth/screens/auth_choice_screen.dart';
 import 'package:ironvault/core/theme/app_tokens.dart';
-import 'package:ironvault/core/utils/recovery_key.dart';
-import 'package:ironvault/features/auth/screens/recovery_key_screen.dart';
 
-class SetupMasterPinScreen extends ConsumerStatefulWidget {
-  const SetupMasterPinScreen({super.key});
+class ResetPinScreen extends ConsumerStatefulWidget {
+  const ResetPinScreen({super.key});
 
   @override
-  ConsumerState<SetupMasterPinScreen> createState() =>
-      _SetupMasterPinScreenState();
+  ConsumerState<ResetPinScreen> createState() => _ResetPinScreenState();
 }
 
-class _SetupMasterPinScreenState extends ConsumerState<SetupMasterPinScreen> {
+class _ResetPinScreenState extends ConsumerState<ResetPinScreen> {
   final int pinLength = 4;
 
   final List<TextEditingController> _pin = List.generate(
@@ -64,24 +61,9 @@ class _SetupMasterPinScreenState extends ConsumerState<SetupMasterPinScreen> {
 
     setState(() => _loading = false);
 
-    final existingRecovery = await storage.readRecoveryKeyHash();
-    if (existingRecovery == null) {
-      final key = RecoveryKeyUtil.generate();
-      await storage.writeRecoveryKeyHash(RecoveryKeyUtil.hash(key));
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => RecoveryKeyScreen(recoveryKey: key),
-        ),
-      );
-      return;
-    }
-
-    if (!mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const EnableBiometricsScreen()),
+      MaterialPageRoute(builder: (_) => const AuthChoiceScreen()),
     );
   }
 
@@ -175,7 +157,7 @@ class _SetupMasterPinScreenState extends ConsumerState<SetupMasterPinScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Create Master PIN")),
+      appBar: AppBar(title: const Text("Reset PIN")),
       body: Container(
         decoration: BoxDecoration(gradient: bgGradient),
         child: SafeArea(
@@ -197,19 +179,8 @@ class _SetupMasterPinScreenState extends ConsumerState<SetupMasterPinScreen> {
                 ),
                 child: Column(
                   children: [
-                    CircleAvatar(
-                      radius: 34,
-                      backgroundColor:
-                          Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
-                      child: Icon(
-                        Icons.lock,
-                        size: 30,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                     Text(
-                      "Set a 4-digit Master PIN",
+                      "Set a new PIN",
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
@@ -217,14 +188,13 @@ class _SetupMasterPinScreenState extends ConsumerState<SetupMasterPinScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      "This PIN will unlock your secure vault.",
+                      "Confirm to regain access.",
                       style: TextStyle(
                         fontSize: 12,
                         color: textMuted,
                       ),
                     ),
                     const SizedBox(height: 24),
-
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -235,7 +205,6 @@ class _SetupMasterPinScreenState extends ConsumerState<SetupMasterPinScreen> {
                     const SizedBox(height: 12),
                     _otpRow(_pin, _pinNodes),
                     const SizedBox(height: 20),
-
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -246,7 +215,6 @@ class _SetupMasterPinScreenState extends ConsumerState<SetupMasterPinScreen> {
                     const SizedBox(height: 12),
                     _otpRow(_confirm, _confirmNodes),
                     const SizedBox(height: 24),
-
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(

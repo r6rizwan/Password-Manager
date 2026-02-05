@@ -44,7 +44,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     final autoLock = ref.read(autoLockProvider.notifier);
 
     if (state == AppLifecycleState.paused) {
-      // App moved to background → start timer
+      // App moved to background --> start timer
       autoLock.markPaused();
     }
 
@@ -82,14 +82,17 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final style = SystemUiOverlayStyle(
           statusBarColor: isDark ? AppColorsDark.bg : AppColorsLight.bg,
-          statusBarIconBrightness:
-              isDark ? Brightness.light : Brightness.dark,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
           statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
         );
         SystemChrome.setSystemUIOverlayStyle(style);
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: style,
-          child: child ?? const SizedBox.shrink(),
+          child: SafeArea(
+            top: false,
+            bottom: true,
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
       home: const SplashScreen(),
@@ -117,7 +120,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
     await Future.delayed(const Duration(milliseconds: 500));
 
-    // 1️⃣ Onboarding
+    // Onboarding
     final onboardingDone =
         (await storage.readValue("onboarding_complete") ?? "false") == "true";
 
@@ -128,7 +131,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       return;
     }
 
-    // 2️⃣ Check master key + PIN
+    // Check master key + PIN
     final masterKey = await storage.readMasterKey();
     final pinHash = await storage.readPinHash();
 
@@ -144,7 +147,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       return;
     }
 
-    // 3️⃣ User already set everything → go to auth choice
+    // User already set everything → go to auth choice
     navKey.currentState?.pushReplacement(
       MaterialPageRoute(builder: (_) => const AuthChoiceScreen()),
     );

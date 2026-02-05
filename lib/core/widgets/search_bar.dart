@@ -3,13 +3,11 @@ import 'package:flutter/material.dart';
 class IronSearchBar extends StatefulWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
-  final VoidCallback onSortPressed;
 
   const IronSearchBar({
     super.key,
     required this.controller,
     required this.onChanged,
-    required this.onSortPressed,
   });
 
   @override
@@ -74,12 +72,6 @@ class IronSearchBarState extends State<IronSearchBar> {
                       )
                     : const SizedBox(height: 22),
               ),
-            ),
-
-            // Sort icon moved OUT of search area, but kept for backward UI
-            GestureDetector(
-              onTap: widget.onSortPressed,
-              child: const Icon(Icons.expand_more, size: 22),
             ),
           ],
         ),

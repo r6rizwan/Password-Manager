@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,6 +78,134 @@ class _ViewCredentialScreenState extends ConsumerState<ViewCredentialScreen> {
     await Clipboard.setData(ClipboardData(text: value));
     setState(() => _copiedKey = key);
     await _scheduleClipboardClear(value);
+  }
+
+  void _openScanPreview(
+    BuildContext context,
+    List<String> pages,
+    int initialIndex,
+  ) {
+    showDialog(
+      context: context,
+      builder: (_) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          child: Container(
+            color: Colors.black,
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: PageView.builder(
+              controller: PageController(initialPage: initialIndex),
+              itemCount: pages.length,
+              itemBuilder: (_, i) {
+                return InteractiveViewer(
+                  child: Image.file(
+                    File(pages[i]),
+                    fit: BoxFit.contain,
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _openScanManager(BuildContext context, List<String> pages) {
+    final mutable = List<String>.from(pages);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Manage scanned pages',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 320,
+                  child: ReorderableListView.builder(
+                    itemCount: mutable.length,
+                    onReorder: (oldIndex, newIndex) {
+                      setState(() {
+                        if (newIndex > oldIndex) newIndex -= 1;
+                        final item = mutable.removeAt(oldIndex);
+                        mutable.insert(newIndex, item);
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      final path = mutable[index];
+                      return ListTile(
+                        key: ValueKey(path),
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            File(path),
+                            width: 48,
+                            height: 64,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        title: Text('Page ${index + 1}'),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () {
+                            setState(() => mutable.removeAt(index));
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final repo = ref.read(credentialRepoProvider);
+                      final fields = Map<String, String>.from(
+                        (item['fields'] as Map).cast<String, String>(),
+                      );
+                      fields['scans'] = jsonEncode(mutable);
+                      await repo.updateItem(
+                        id: item['id'],
+                        type: item['type'],
+                        title: item['title'],
+                        fields: fields,
+                        category: item['category'],
+                      );
+                      setState(() {
+                        item['fields'] = fields;
+                      });
+                      if (context.mounted) Navigator.pop(context);
+                    },
+                    child: const Text('Save changes'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _toggleFavorite() async {
@@ -274,9 +403,13 @@ class _ViewCredentialScreenState extends ConsumerState<ViewCredentialScreen> {
                 final raw = (fields['scans'] ?? '').toString();
                 if (raw.trim().isEmpty) return const SizedBox.shrink();
                 int count = 0;
+                List<String> pages = [];
                 try {
                   final decoded = jsonDecode(raw);
-                  if (decoded is List) count = decoded.length;
+                  if (decoded is List) {
+                    pages = decoded.map((e) => e.toString()).toList();
+                    count = pages.length;
+                  }
                 } catch (_) {}
                 if (count == 0) return const SizedBox.shrink();
                 return Column(
@@ -284,6 +417,39 @@ class _ViewCredentialScreenState extends ConsumerState<ViewCredentialScreen> {
                   children: [
                     _sectionTitle('Scanned Pages'),
                     _infoTile(value: '$count page(s)'),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 90,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: pages.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 10),
+                        itemBuilder: (_, i) {
+                          final path = pages[i];
+                          return GestureDetector(
+                            onTap: () => _openScanPreview(context, pages, i),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(
+                                File(path),
+                                width: 70,
+                                height: 90,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => _openScanManager(context, pages),
+                        icon: const Icon(Icons.edit, size: 16),
+                        label: const Text('Manage pages'),
+                      ),
+                    ),
                   ],
                 );
               }

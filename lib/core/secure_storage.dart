@@ -13,6 +13,7 @@ class SecureStorage {
 
   static const _masterKeyKey = 'master_key_vault';
   static const _pinHashKey = 'master_pin_hash';
+  static const _recoveryKeyHash = 'recovery_key_hash';
 
   // ===== MASTER KEY =====
   Future<void> writeMasterKey(String key) async {
@@ -38,6 +39,19 @@ class SecureStorage {
 
   Future<void> deletePinHash() async {
     await _storage.delete(key: _pinHashKey);
+  }
+
+  // ===== RECOVERY KEY =====
+  Future<void> writeRecoveryKeyHash(String hash) async {
+    await _storage.write(key: _recoveryKeyHash, value: hash);
+  }
+
+  Future<String?> readRecoveryKeyHash() async {
+    return await _storage.read(key: _recoveryKeyHash);
+  }
+
+  Future<void> deleteRecoveryKeyHash() async {
+    await _storage.delete(key: _recoveryKeyHash);
   }
 
   // ===== Generic Key/Value Storage (Biometrics, Preferences, etc.) =====

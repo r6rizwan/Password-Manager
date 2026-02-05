@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:flutter/services.dart';
 
 import 'package:ironvault/core/autolock/auto_lock_provider.dart';
 import 'package:ironvault/core/navigation/global_nav.dart';
@@ -24,6 +25,8 @@ class _AuthChoiceScreenState extends ConsumerState<AuthChoiceScreen> {
   bool _biometricAvailable = false;
   bool _biometricEnabled = false;
   String? _error;
+  DateTime? _lastBackPress;
+  OverlayEntry? _exitToast;
 
   @override
   void initState() {
@@ -54,18 +57,31 @@ class _AuthChoiceScreenState extends ConsumerState<AuthChoiceScreen> {
         biometricOnly: true,
       );
 
-      if (!ok) return;
+      if (!ok) {
+        // User canceled or failed; don't show an error here.
+        return;
+      }
 
       ref.read(autoLockProvider.notifier).unlock();
       await Future.delayed(const Duration(milliseconds: 60));
 
-      navKey.currentState?.pushReplacement(
+      navKey.currentState?.pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const AppScaffold()),
+        (_) => false,
       );
-    } catch (e) {
-      if (mounted) {
-        setState(() => _error = "Biometric error: $e");
+    } on PlatformException catch (e) {
+      // Ignore user/system cancellations; only show unexpected errors.
+      if (e.code == 'auth_in_progress' ||
+          e.code == 'notAvailable' ||
+          e.code == 'notEnrolled' ||
+          e.code == 'lockedOut' ||
+          e.code == 'permanentlyLockedOut') {
+        if (mounted) {
+          setState(() => _error = "Biometric unavailable. Try PIN instead.");
+        }
       }
+    } catch (_) {
+      // Swallow generic errors to avoid noisy UX on cancel.
     }
   }
 
@@ -88,8 +104,21 @@ class _AuthChoiceScreenState extends ConsumerState<AuthChoiceScreen> {
     final biometricEnabled = _biometricEnabled && _biometricAvailable;
     final size = MediaQuery.of(context).size;
 
-    return Scaffold(
-      body: Stack(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        final now = DateTime.now();
+        if (_lastBackPress == null ||
+            now.difference(_lastBackPress!) > const Duration(seconds: 2)) {
+          _lastBackPress = now;
+          _showExitToast(context);
+          return;
+        }
+        SystemNavigator.pop();
+      },
+      child: Scaffold(
+        body: Stack(
         children: [
           Container(
             decoration: BoxDecoration(
@@ -245,8 +274,43 @@ class _AuthChoiceScreenState extends ConsumerState<AuthChoiceScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
+  }
+
+  void _showExitToast(BuildContext context) {
+    _exitToast?.remove();
+    _exitToast = OverlayEntry(
+      builder: (ctx) => Positioned(
+        left: 16,
+        right: 16,
+        bottom: 90,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: const Text('Press back again to exit'),
+          ),
+        ),
+      ),
+    );
+    Overlay.of(context, rootOverlay: true).insert(_exitToast!);
+    Future.delayed(const Duration(seconds: 2), () {
+      _exitToast?.remove();
+      _exitToast = null;
+    });
   }
 }
 

@@ -70,36 +70,6 @@ class _ChangePinScreenState extends ConsumerState<ChangePinScreen> {
     Navigator.pop(context);
   }
 
-  // ignore: unused_element
-  Widget _pinField({
-    required TextEditingController controller,
-    required String label,
-    required bool obscure,
-    required VoidCallback onToggle,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscure,
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 14,
-          horizontal: 16,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        suffixIcon: IconButton(
-          icon: Icon(obscure ? Icons.visibility : Icons.visibility_off),
-          onPressed: onToggle,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final spacing = const SizedBox(height: 16);
@@ -110,51 +80,6 @@ class _ChangePinScreenState extends ConsumerState<ChangePinScreen> {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: 0.12),
-                    child: Icon(
-                      Icons.lock_outline,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      "Update your master PIN",
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // _pinField(
-            //   controller: _oldPinController,
-            //   label: "Old PIN",
-            //   obscure: !_showOld,
-            //   onToggle: () => setState(() => _showOld = !_showOld),
-            // ),
             CommonTextField(
               label: "Old PIN",
               controller: _oldPinController,
@@ -165,12 +90,6 @@ class _ChangePinScreenState extends ConsumerState<ChangePinScreen> {
 
             spacing,
 
-            // _pinField(
-            //   controller: _newPinController,
-            //   label: "New PIN",
-            //   obscure: !_showNew,
-            //   onToggle: () => setState(() => _showNew = !_showNew),
-            // ),
             CommonTextField(
               label: "New PIN",
               controller: _newPinController,
@@ -181,12 +100,6 @@ class _ChangePinScreenState extends ConsumerState<ChangePinScreen> {
 
             spacing,
 
-            // _pinField(
-            //   controller: _confirmPinController,
-            //   label: "Confirm New PIN",
-            //   obscure: !_showConfirm,
-            //   onToggle: () => setState(() => _showConfirm = !_showConfirm),
-            // ),
             CommonTextField(
               label: "Confirm New PIN",
               controller: _confirmPinController,

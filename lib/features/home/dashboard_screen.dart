@@ -9,13 +9,14 @@ import 'package:ironvault/features/add/screens/add_item_screen.dart';
 import 'package:ironvault/features/categories/add_category_screen.dart';
 import 'package:ironvault/features/categories/providers/category_provider.dart';
 import 'package:ironvault/features/vault/screens/credential_list_screen.dart';
+import 'package:ironvault/features/vault/screens/password_health_screen.dart';
 import 'package:ironvault/features/vault/screens/view_credential_screen.dart';
 import 'package:ironvault/core/theme/app_tokens.dart';
 
 class DashboardScreen extends ConsumerWidget {
   final bool showAppBar;
 
-  const DashboardScreen({super.key, this.showAppBar = true});
+  const DashboardScreen({super.key, this.showAppBar = false});
 
   Future<List<Map<String, dynamic>>> _loadRecent(WidgetRef ref) async {
     final repo = ref.read(credentialRepoProvider);
@@ -58,13 +59,13 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: showAppBar ? AppBar(title: const Text('Home')) : null,
+      appBar: showAppBar ? AppBar(title: const Text('IronVault')) : null,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isDark
@@ -85,30 +86,22 @@ class DashboardScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "IronVault",
+                  const Text(
+                    "Vault Overview",
                     style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
                       color: Colors.white,
-                      letterSpacing: 0.4,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "All your secrets, organized.",
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 8),
                   FutureBuilder<Map<String, int>>(
                     future: _loadStats(ref),
                     builder: (context, snapshot) {
                       final stats =
                           snapshot.data ??
                           {'total': 0, 'favorites': 0, 'weak': 0};
+                      // final total = stats['total'] ?? 0;
                       return Row(
                         children: [
                           _StatPill(
@@ -130,8 +123,24 @@ class DashboardScreen extends ConsumerWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 14),
                   const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PasswordHealthScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "Password Health",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

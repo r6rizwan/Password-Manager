@@ -9,6 +9,8 @@ class CommonTextField extends StatelessWidget {
   final VoidCallback? onToggle;
   final Iterable<String>? autofillHints;
   final int maxLines;
+  final String? errorText;
+  final bool requiredField;
 
   const CommonTextField({
     super.key,
@@ -20,6 +22,8 @@ class CommonTextField extends StatelessWidget {
     this.onToggle,
     this.autofillHints,
     this.maxLines = 1,
+    this.errorText,
+    this.requiredField = false,
   });
 
   @override
@@ -27,13 +31,26 @@ class CommonTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Theme.of(context).textTheme.bodyMedium?.color,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (requiredField) ...[
+              const SizedBox(width: 4),
+              const Icon(
+                Icons.error_outline,
+                size: 14,
+                color: Colors.red,
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 6),
         TextField(
@@ -57,6 +74,7 @@ class CommonTextField extends StatelessWidget {
                         onPressed: onToggle,
                       )
                     : null),
+            errorText: errorText,
           ),
         ),
       ],
