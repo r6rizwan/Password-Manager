@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.25
+
+- Fixed the Home screen update indicator so it appears after a successful manual update check without requiring a full app restart.
+- Reduced the automatic startup update-check cache window from 24 hours to 12 hours so new releases are detected sooner.
+
 ## v1.0.24
 
 - Minor bug fixes and stability improvements for this release.

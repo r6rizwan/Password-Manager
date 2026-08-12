@@ -103,10 +103,10 @@ Output paths:
 Version is maintained in `pubspec.yaml`:
 - `versionName` comes from `version`
 - `versionCode` comes from the build number suffix
-- Current release target: `1.0.24+25`
+- Current release target: `1.0.25+26`
 
 Use Git tags for releases:
-- Tags follow the app version format in `pubspec.yaml` (for example `v1.0.24`).
+- Tags follow the app version format in `pubspec.yaml` (for example `v1.0.25`).
 
 ## GitHub Actions (CI/CD)
 
@@ -116,10 +116,10 @@ Workflows live under `.github/workflows/`.
 - **Flutter Analyze** runs on every **push** and **pull request** to `main`: checks out the repo, runs `flutter pub get`, then `flutter analyze`.
 
 ### Automated release APK
-- **Release APK** runs when you **push a tag** whose name starts with `v` (for example `v1.0.24`), and it can also be started manually from the **Actions** tab in GitHub.
+- **Release APK** runs when you **push a tag** whose name starts with `v` (for example `v1.0.25`), and it can also be started manually from the **Actions** tab in GitHub.
 - The job restores Android release signing from **repository secrets** (never committed): base64-decoded keystore under `android/app/keystore.jks` and `android/key.properties` generated in the runner.
 - It runs `flutter build apk --release`, stages the release artifact as `ironvault-<tag>.apk` (preferring the Gradle `apk/release` output when present), runs a short **verify** step (`apksigner` / `aapt` when available), then **creates or updates a GitHub Release** for that tag and uploads the APK.
-- **Release notes** for the GitHub Release are taken from `CHANGELOG.md`: the workflow looks for a section whose heading is exactly `## ` plus the tag name (for example `## v1.0.24`). Add that section before you push the tag so the release page is populated.
+- **Release notes** for the GitHub Release are taken from `CHANGELOG.md`: the workflow looks for a section whose heading is exactly `## ` plus the tag name (for example `## v1.0.25`). Add that section before you push the tag so the release page is populated.
 
 ### Repository secrets (maintainers, for automated APK releases)
 
@@ -135,10 +135,10 @@ Configure these in **GitHub → Settings → Secrets and variables → Actions**
 ### Recommended release process (with Actions)
 
 1. Update `version` in `pubspec.yaml`.
-2. Add a matching section to `CHANGELOG.md`, for example `## v1.0.24` (must match the tag you will push).
+2. Add a matching section to `CHANGELOG.md`, for example `## v1.0.25` (must match the tag you will push).
 3. Commit and push to `main`.
-4. Create and push the tag (for example `git tag -a v1.0.24 -m "v1.0.24"` then `git push origin v1.0.24`).
-5. If needed, trigger the **Release APK** workflow manually from the **Actions** tab and enter the same tag; then download **`ironvault-v1.0.24.apk`** from **Releases**.
+4. Create and push the tag (for example `git tag -a v1.0.25 -m "v1.0.25"` then `git push origin v1.0.25`).
+5. If needed, trigger the **Release APK** workflow manually from the **Actions** tab and enter the same tag; then download **`ironvault-v1.0.25.apk`** from **Releases**.
 
 For a **local** signed release build, keep using `android/key.properties` and your keystore as described in **Security Rules For Contributors** below; do not commit those files.
 

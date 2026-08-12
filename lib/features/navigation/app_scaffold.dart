@@ -132,7 +132,7 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
     } else if (last != null) {
       final lastTime = DateTime.tryParse(last);
       if (lastTime != null &&
-          DateTime.now().difference(lastTime).inHours < 24) {
+          DateTime.now().difference(lastTime).inHours < 12) {
         _updateAvailable = cachedAvailable == 'true';
         _updateVersion = cachedVersion;
         if (mounted) setState(() {});
@@ -166,6 +166,23 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
 
     if (mounted) setState(() {});
     _checkingUpdate = false;
+  }
+
+  Future<void> _refreshCachedUpdateStatus() async {
+    final cachedAvailable = await _storage.readValue('update_available');
+    final cachedVersion = await _storage.readValue('update_version');
+    final nextAvailable = cachedAvailable == 'true';
+    final nextVersion = (cachedVersion == null || cachedVersion.isEmpty)
+        ? null
+        : cachedVersion;
+
+    if (_updateAvailable == nextAvailable && _updateVersion == nextVersion) {
+      return;
+    }
+
+    _updateAvailable = nextAvailable;
+    _updateVersion = nextVersion;
+    if (mounted) setState(() {});
   }
 
   int _indexForPage(AppPage page) {
@@ -343,7 +360,11 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
       icon: icon,
       label: label,
       selected: selected,
-      onTap: () => setState(() => _currentPage = _pageForIndex(index)),
+      onTap: () async {
+        await _refreshCachedUpdateStatus();
+        if (!mounted) return;
+        setState(() => _currentPage = _pageForIndex(index));
+      },
     );
   }
 
