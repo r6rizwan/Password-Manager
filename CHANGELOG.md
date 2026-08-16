@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.26
+
+- Fixed tab navigation performance stutter by memoizing local vault data queries.
+- Fixed biometric authentication cancellation so closing or cancelling the biometrics prompt no longer triggers an unexpected PIN confirmation dialog.
+- Streamlined bottom navigation to 3 core tabs (Home, Vault, Settings) with an ergonomic floating "Add" action button.
+- Added universal search sheet accessible from the Home app bar and inline live search in the Vault list.
+- Cleaned up the credential detail screen app bar with a 3-dots overflow menu for secondary actions.
+
 ## v1.0.25
 
 - Fixed the Home screen update indicator so it appears after a successful manual update check without requiring a full app restart.

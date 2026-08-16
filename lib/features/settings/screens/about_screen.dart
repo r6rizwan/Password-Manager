@@ -9,15 +9,17 @@ import 'package:ironvault/features/settings/screens/security_tips_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ironvault/core/autolock/auto_lock_provider.dart';
 
-class AboutScreen extends StatefulWidget {
+class AboutScreen extends ConsumerStatefulWidget {
   const AboutScreen({super.key});
 
   @override
-  State<AboutScreen> createState() => _AboutScreenState();
+  ConsumerState<AboutScreen> createState() => _AboutScreenState();
 }
 
-class _AboutScreenState extends State<AboutScreen> {
+class _AboutScreenState extends ConsumerState<AboutScreen> {
   static const _updateCacheInstalledVersionKey =
       'update_cache_installed_version';
 
@@ -162,30 +164,42 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _reportIssue() async {
-    const url = 'https://github.com/r6rizwan/IronVault/issues';
-    final uri = Uri.parse(url);
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final autoLock = ref.read(autoLockProvider.notifier);
+    autoLock.suspendAutoLock();
+    try {
+      const url = 'https://github.com/r6rizwan/IronVault/issues';
+      final uri = Uri.parse(url);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } finally {
+      autoLock.resumeAutoLock();
+    }
   }
 
   Future<void> _openGitHub() async {
-    const url = 'https://github.com/r6rizwan/IronVault';
-    final uri = Uri.parse(url);
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  Future<void> _openProjectLicense() async {
-    const url = 'https://github.com/r6rizwan/IronVault/blob/main/LICENSE';
-    final uri = Uri.parse(url);
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final autoLock = ref.read(autoLockProvider.notifier);
+    autoLock.suspendAutoLock();
+    try {
+      const url = 'https://github.com/r6rizwan/IronVault';
+      final uri = Uri.parse(url);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } finally {
+      autoLock.resumeAutoLock();
+    }
   }
 
   Future<void> _shareApp() async {
-    await SharePlus.instance.share(
-      ShareParams(
-        text:
-            'Try IronVault, a private offline vault for Android: https://github.com/r6rizwan/IronVault/releases/latest',
-      ),
-    );
+    final autoLock = ref.read(autoLockProvider.notifier);
+    autoLock.suspendAutoLock();
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          text:
+              'Try IronVault, a private offline vault for Android: https://github.com/r6rizwan/IronVault/releases/latest',
+        ),
+      );
+    } finally {
+      autoLock.resumeAutoLock();
+    }
   }
 
   @override
@@ -219,35 +233,6 @@ class _AboutScreenState extends State<AboutScreen> {
                 _BulletLine(
                   text:
                       'Keep important information private on your device.',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          _sectionCard(
-            context,
-            title: 'Security',
-            child: Column(
-              children: const [
-                _SpecRow(
-                  icon: Icons.verified_user_outlined,
-                  label: 'Encryption',
-                  value: 'AES-256-GCM',
-                  color: Color(0xFF1E88E5),
-                ),
-                SizedBox(height: 12),
-                _SpecRow(
-                  icon: Icons.password_outlined,
-                  label: 'PIN protection',
-                  value: 'PBKDF2',
-                  color: Color(0xFF43A047),
-                ),
-                SizedBox(height: 12),
-                _SpecRow(
-                  icon: Icons.phone_android_outlined,
-                  label: 'Storage',
-                  value: 'Local only',
-                  color: Color(0xFFFFA000),
                 ),
               ],
             ),
@@ -354,14 +339,6 @@ class _AboutScreenState extends State<AboutScreen> {
                       ),
                     );
                   },
-                ),
-                const SizedBox(height: 10),
-                _actionTile(
-                  context,
-                  icon: Icons.gavel_outlined,
-                  title: 'Project License',
-                  subtitle: 'View the MIT License for this app',
-                  onTap: _openProjectLicense,
                 ),
               ],
             ),
@@ -567,48 +544,6 @@ class _BulletLine extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: Text(text, style: const TextStyle(fontSize: 13, height: 1.45)),
-        ),
-      ],
-    );
-  }
-}
-
-class _SpecRow extends StatelessWidget {
-  const _SpecRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final textMuted = AppThemeColors.textMuted(context);
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: color.withValues(alpha: 0.14),
-          child: Icon(icon, size: 18, color: color),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: TextStyle(fontSize: 13, color: textMuted)),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
         ),
       ],
     );

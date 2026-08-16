@@ -12,15 +12,14 @@ It stores vault data locally on the device and protects it with strong encryptio
 - Android document scan/import support
 - Add-item draft restore to preserve unsaved progress after lock/interruption
 - Manual and startup update checks via GitHub Releases
-- In-app privacy, update, issue-reporting, project-license, and share-app links from the About screen
+- In-app privacy, update, issue-reporting, and share-app links from the About screen
 
 ## Recent Highlights
+- Performance optimization for tab navigation by caching local encrypted vault queries.
+- Biometric auth prompt cancellation fixes to avoid unwanted PIN prompt fallbacks.
+- Simplified 3-tab navigation (Home, Vault, Settings) with universal search sheet and inline list search.
+- Credential detail screen app bar decluttering using a 3-dots overflow action menu.
 - Recovery-key management now uses re-authentication and an explicit in-screen generation flow.
-- Password Health offers actionable review cards and deep links into affected vault items.
-- Draft restore and keep/discard prompts protect unsaved work after lock or interruption.
-- Privacy, backup, and update-check behavior were tightened for everyday use.
-- Bank account details now render account type and related fields correctly in the credential detail screen.
-- Document attachments preserve original filenames and support clearer in-app preview and management flows.
 
 ## Key Features
 - Vault item types:

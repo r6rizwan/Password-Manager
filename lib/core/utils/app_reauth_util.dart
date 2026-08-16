@@ -29,7 +29,7 @@ class AppReauthUtil {
             localizedReason: reason,
             biometricOnly: true,
           );
-          if (ok) return true;
+          return ok;
         }
       }
     } on PlatformException catch (error) {

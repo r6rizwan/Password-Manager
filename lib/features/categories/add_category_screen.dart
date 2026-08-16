@@ -38,7 +38,10 @@ class _AddCategoryScreenState extends ConsumerState<AddCategoryScreen> {
 
   Future<void> _save() async {
     final name = _nameCtrl.text.trim();
-    if (name.isEmpty) return;
+    if (name.isEmpty) {
+      showAppToast(context, 'Please enter a category name.');
+      return;
+    }
 
     final existingCategories = ref.read(categoryListProvider);
     final duplicate = existingCategories.any((category) {

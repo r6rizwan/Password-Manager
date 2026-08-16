@@ -15,15 +15,16 @@ import 'package:ironvault/features/vault/screens/password_health_screen.dart';
 import 'package:ironvault/features/vault/screens/view_credential_screen.dart';
 import 'package:ironvault/core/theme/app_tokens.dart';
 
+final dashboardItemsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  ref.watch(vaultRefreshProvider);
+  final repo = ref.read(credentialRepoProvider);
+  return repo.getAllDecrypted();
+});
+
 class DashboardScreen extends ConsumerWidget {
   final bool showAppBar;
 
   const DashboardScreen({super.key, this.showAppBar = false});
-
-  Future<List<Map<String, dynamic>>> _loadAllItems(WidgetRef ref) async {
-    final repo = ref.read(credentialRepoProvider);
-    return repo.getAllDecrypted();
-  }
 
   List<Map<String, dynamic>> _recentItems(List<Map<String, dynamic>> all) {
     final sorted = [...all];
@@ -70,10 +71,9 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(vaultRefreshProvider);
     final categories = ref.watch(categoryListProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final allItemsFuture = _loadAllItems(ref);
+    final itemsAsync = ref.watch(dashboardItemsProvider);
 
     return Scaffold(
       backgroundColor: showAppBar
@@ -104,7 +104,7 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-                child: Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
@@ -116,23 +116,9 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  FutureBuilder<List<Map<String, dynamic>>>(
-                    future: allItemsFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState != ConnectionState.done) {
-                        return const Row(
-                          children: [
-                            _StatPillSkeleton(),
-                            SizedBox(width: 10),
-                            _StatPillSkeleton(),
-                            SizedBox(width: 10),
-                            _StatPillSkeleton(),
-                          ],
-                        );
-                      }
-                      final stats = snapshot.hasData
-                          ? _statsForItems(snapshot.data!)
-                          : {'total': 0, 'favorites': 0, 'weak': 0};
+                  itemsAsync.when(
+                    data: (allItems) {
+                      final stats = _statsForItems(allItems);
                       return Row(
                         children: [
                           _StatPill(
@@ -153,6 +139,16 @@ class DashboardScreen extends ConsumerWidget {
                         ],
                       );
                     },
+                    loading: () => const Row(
+                      children: [
+                        _StatPillSkeleton(),
+                        SizedBox(width: 10),
+                        _StatPillSkeleton(),
+                        SizedBox(width: 10),
+                        _StatPillSkeleton(),
+                      ],
+                    ),
+                    error: (_, __) => const SizedBox.shrink(),
                   ),
                   const SizedBox(height: 6),
                   const SizedBox(height: 10),
@@ -265,23 +261,9 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 10),
-            FutureBuilder<List<Map<String, dynamic>>>(
-              future: allItemsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return SizedBox(
-                    height: 46,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: 4,
-                      separatorBuilder: (_, __) => const SizedBox(width: 10),
-                      itemBuilder: (_, __) => const _ChipSkeleton(width: 108),
-                    ),
-                  );
-                }
-                final counts = snapshot.hasData
-                    ? _categoryCountsForItems(snapshot.data!)
-                    : <String, int>{};
+            itemsAsync.when(
+              data: (allItems) {
+                final counts = _categoryCountsForItems(allItems);
                 final topCategories = [...categories]
                   ..sort((a, b) {
                     final ac = counts[a.name] ?? 0;
@@ -336,6 +318,16 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 );
               },
+              loading: () => SizedBox(
+                height: 46,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: 4,
+                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  itemBuilder: (_, __) => const _ChipSkeleton(width: 108),
+                ),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
             ),
 
             const SizedBox(height: 22),
@@ -358,32 +350,27 @@ class DashboardScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 8),
-            FutureBuilder<List<Map<String, dynamic>>>(
-              future: allItemsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Column(
-                    children: [
-                      _RecentTileSkeleton(),
-                      _RecentTileSkeleton(),
-                      _RecentTileSkeleton(),
-                    ],
-                  );
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            itemsAsync.when(
+              data: (allItems) {
+                if (allItems.isEmpty) {
                   return const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Center(child: Text("No recent items")),
                   );
                 }
-
-                final items = _recentItems(snapshot.data!);
+                final items = _recentItems(allItems);
                 return Column(
-                  children: items
-                      .map((item) => _RecentTile(item: item))
-                      .toList(),
+                  children: items.map((item) => _RecentTile(item: item)).toList(),
                 );
               },
+              loading: () => const Column(
+                children: [
+                  _RecentTileSkeleton(),
+                  _RecentTileSkeleton(),
+                  _RecentTileSkeleton(),
+                ],
+              ),
+              error: (_, __) => const SizedBox.shrink(),
             ),
           ],
         ),
