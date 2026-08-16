@@ -1,6 +1,9 @@
 # Changelog
 
 ## v1.0.26
+- Bug fixes and performance improvements 
+
+## v1.0.26
 
 - Fixed tab navigation performance stutter by memoizing local vault data queries.
 - Fixed biometric authentication cancellation so closing or cancelling the biometrics prompt no longer triggers an unexpected PIN confirmation dialog.
