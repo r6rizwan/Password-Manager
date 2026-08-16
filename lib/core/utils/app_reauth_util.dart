@@ -17,7 +17,6 @@ class AppReauthUtil {
     required String reason,
   }) async {
     final auth = LocalAuthentication();
-    var shouldFallbackToPin = true;
 
     try {
       final canCheck = await auth.canCheckBiometrics;
@@ -25,24 +24,27 @@ class AppReauthUtil {
       if (canCheck && supported) {
         final enrolled = await auth.getAvailableBiometrics();
         if (enrolled.isNotEmpty) {
-          final ok = await auth.authenticate(
-            localizedReason: reason,
-            biometricOnly: true,
-          );
-          return ok;
+          // Biometrics are available — use ONLY biometrics.
+          // Any result (false = cancelled/failed) or any exception = abort.
+          // Never fall through to PIN when biometrics are enrolled.
+          try {
+            final ok = await auth.authenticate(
+              localizedReason: reason,
+              biometricOnly: true,
+            );
+            return ok;
+          } catch (_) {
+            // User cancelled, dismissed, or device error — do NOT prompt PIN.
+            return false;
+          }
         }
       }
-    } on PlatformException catch (error) {
-      final code = error.code.toLowerCase();
-      if (code == 'canceled' ||
-          code == 'cancelled' ||
-          code == 'user_canceled' ||
-          code == 'system_canceled') {
-        shouldFallbackToPin = false;
-      }
-    } catch (_) {}
+    } catch (_) {
+      // canCheckBiometrics / getAvailableBiometrics failed — fall through to PIN.
+    }
 
-    if (!context.mounted || !shouldFallbackToPin) return false;
+    // No biometrics enrolled at all → fall back to PIN.
+    if (!context.mounted) return false;
     return _promptForPin(context, ref);
   }
 
