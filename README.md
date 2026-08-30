@@ -21,6 +21,23 @@ It stores vault data locally on the device and protects it with strong encryptio
 - Credential detail screen app bar decluttering using a 3-dots overflow action menu.
 - Recovery-key management now uses re-authentication and an explicit in-screen generation flow.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><b>Login</b><br><img src="screenshots/ironvault_login.jpeg" width="400"></td>
+    <td align="center"><b>Vault Home</b><br><img src="screenshots/ironvault_dashboard.jpeg" width="400"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Password List</b><br><img src="screenshots/ironvault_password_list.jpeg" width="400"></td>
+    <td align="center"><b>Password Health</b><br><img src="screenshots/ironvault_password_health.jpeg" width="400"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Add / Edit Item</b><br><img src="screenshots/ironvault_add_edit_item.jpeg" width="400"></td>
+    <td align="center"><b>Settings</b><br><img src="screenshots/ironvault_settings.jpeg" width="400"></td>
+  </tr>
+</table>
+
 ## Key Features
 - Vault item types:
   - Passwords
